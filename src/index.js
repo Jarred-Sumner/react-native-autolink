@@ -6,47 +6,40 @@
  * https://github.com/joshswan/react-native-autolink/blob/master/LICENSE
  */
 
-import React, { Component, createElement } from 'react';
-import PropTypes from 'prop-types';
-import Autolinker from 'autolinker';
-import { Alert, Linking, Platform, StyleSheet, Text } from 'react-native';
-import matchers from './matchers';
+import React, { Component, createElement } from "react";
+import PropTypes from "prop-types";
+import Autolinker from "autolinker";
+import { Alert, Linking, Platform, StyleSheet, Text } from "react-native";
+import matchers from "./matchers";
 
 const tagBuilder = Autolinker.prototype.getTagBuilder();
 
 const styles = StyleSheet.create({
   link: {
-    color: '#0E7AFE',
-  },
+    color: "#0E7AFE"
+  }
 });
 
 export default class Autolink extends Component {
   onPress(match, alertShown) {
     // Check if alert needs to be shown
     if (this.props.showAlert && !alertShown) {
-      Alert.alert(
-        'Leaving App',
-        'Do you want to continue?',
-        [
-          { text: 'Cancel', style: 'cancel' },
-          { text: 'OK', onPress: () => this.onPress(match, true) },
-        ],
-      );
+      Alert.alert("Leaving App", "Do you want to continue?", [
+        { text: "Cancel", style: "cancel" },
+        { text: "OK", onPress: () => this.onPress(match, true) }
+      ]);
 
       return;
     }
 
     // Get url(s) for match
-    const [
-      url,
-      fallback,
-    ] = this.getUrl(match);
+    const [url, fallback] = this.getUrl(match);
 
     // Call custom onPress handler or open link/fallback
     if (this.props.onPress) {
       this.props.onPress(url, match);
     } else if (this.props.webFallback) {
-      Linking.canOpenURL(url).then((supported) => {
+      Linking.canOpenURL(url).then(supported => {
         Linking.openURL(!supported && fallback ? fallback : url);
       });
     } else {
@@ -56,9 +49,7 @@ export default class Autolink extends Component {
 
   onLongPress(match) {
     // Get url for match
-    const [
-      url,
-    ] = this.getUrl(match);
+    const [url] = this.getUrl(match);
 
     if (this.props.onLongPress) {
       this.props.onLongPress(url, match);
@@ -69,51 +60,64 @@ export default class Autolink extends Component {
     const type = match.getType();
 
     switch (type) {
-      case 'email': {
+      case "email": {
         return [`mailto:${encodeURIComponent(match.getEmail())}`];
       }
-      case 'hashtag': {
+      case "hashtag": {
         const tag = encodeURIComponent(match.getHashtag());
 
         switch (this.props.hashtag) {
-          case 'instagram':
-            return [`instagram://tag?name=${tag}`, `https://www.instagram.com/explore/tags/${tag}/`];
-          case 'twitter':
-            return [`twitter://search?query=%23${tag}`, `https://twitter.com/hashtag/${tag}`];
+          case "instagram":
+            return [
+              `instagram://tag?name=${tag}`,
+              `https://www.instagram.com/explore/tags/${tag}/`
+            ];
+          case "twitter":
+            return [
+              `twitter://search?query=%23${tag}`,
+              `https://twitter.com/hashtag/${tag}`
+            ];
           default:
             return [match.getMatchedText()];
         }
       }
-      case 'latlng': {
+      case "latlng": {
         const latlng = match.getLatLng();
-        const query = latlng.replace(/\s/g, '');
+        const query = latlng.replace(/\s/g, "");
 
-        return [Platform.OS === 'ios' ? `http://maps.apple.com/?q=${encodeURIComponent(latlng)}&ll=${query}` : `https://www.google.com/maps/search/?api=1&query=${query}`];
+        return [
+          Platform.OS === "ios"
+            ? `http://maps.apple.com/?q=${encodeURIComponent(
+                latlng
+              )}&ll=${query}`
+            : `https://www.google.com/maps/search/?api=1&query=${query}`
+        ];
       }
-      case 'mention': {
+      case "mention": {
         const mention = match.getMention();
 
         switch (this.props.mention) {
-          case 'instagram':
-            return [`instagram://user?username=${mention}`, `https://www.instagram.com/${mention}/`];
-          case 'twitter':
-            return [`twitter://user?screen_name=${mention}`, `https://twitter.com/${mention}`];
+          case "lillypad":
+            return [
+              `lillypad://user/${mention}`,
+              `https://lillypad.app/${mention}/`
+            ];
           default:
             return [match.getMatchedText()];
         }
       }
-      case 'phone': {
+      case "phone": {
         const number = match.getNumber();
 
         switch (this.props.phone) {
-          case 'sms':
-          case 'text':
+          case "sms":
+          case "text":
             return [`sms:${number}`];
           default:
             return [`tel:${number}`];
         }
       }
-      case 'url': {
+      case "url": {
         return [match.getAnchorHref()];
       }
       default: {
@@ -122,13 +126,19 @@ export default class Autolink extends Component {
     }
   }
 
-  renderLink(text, match, index, textProps) {
-    const truncated = (this.props.truncate > 0) ?
-      Autolinker.truncate.TruncateSmart(text, this.props.truncate, this.props.truncateChars) :
-      text;
+  renderLink = (text, match, index, textProps) => {
+    const { TextComponent } = this.props;
+    const truncated =
+      this.props.truncate > 0
+        ? Autolinker.truncate.TruncateSmart(
+            text,
+            this.props.truncate,
+            this.props.truncateChars
+          )
+        : text;
 
     return (
-      <Text
+      <TextComponent
         {...textProps}
         key={index}
         style={[styles.link, this.props.linkStyle]}
@@ -136,9 +146,9 @@ export default class Autolink extends Component {
         onLongPress={() => this.onLongPress(match)}
       >
         {truncated}
-      </Text>
+      </TextComponent>
     );
-  }
+  };
 
   render() {
     // Destructure props
@@ -162,19 +172,20 @@ export default class Autolink extends Component {
       truncateChars,
       twitter,
       url,
+      TextComponent,
       webFallback,
       ...other
     } = this.props;
 
     // Backwards compatibility for Twitter prop
     if (!mention && twitter) {
-      mention = 'twitter';
+      mention = "twitter";
     }
 
     // Creates a token with a random UID that should not be guessable or
     // conflict with other parts of the string.
     const uid = Math.floor(Math.random() * 0x10000000000).toString(16);
-    const tokenRegexp = new RegExp(`(@__ELEMENT-${uid}-\\d+__@)`, 'g');
+    const tokenRegexp = new RegExp(`(@__ELEMENT-${uid}-\\d+__@)`, "g");
 
     const generateToken = (() => {
       let counter = 0;
@@ -184,20 +195,20 @@ export default class Autolink extends Component {
     const matches = {};
 
     try {
-      text = Autolinker.link(text || '', {
+      text = Autolinker.link(text || "", {
         email,
         hashtag,
         mention,
         phone,
         urls: url,
         stripPrefix,
-        replaceFn: (match) => {
+        replaceFn: match => {
           const token = generateToken();
 
           matches[token] = match;
 
           return token;
-        },
+        }
       });
 
       // Custom matchers
@@ -211,7 +222,7 @@ export default class Autolink extends Component {
               tagBuilder,
               matchedText,
               offset: args[args.length - 2],
-              [id]: matchedText,
+              [id]: matchedText
             });
 
             return token;
@@ -233,25 +244,31 @@ export default class Autolink extends Component {
         if (!match) return part;
 
         switch (match.getType()) {
-          case 'email':
-          case 'hashtag':
-          case 'latlng':
-          case 'mention':
-          case 'phone':
-          case 'url':
-            return (renderLink) ?
-              renderLink(match.getAnchorText(), match, index) :
-              this.renderLink(match.getAnchorText(), match, index, other);
+          case "email":
+          case "hashtag":
+          case "latlng":
+          case "mention":
+          case "phone":
+          case "url":
+            return renderLink
+              ? renderLink(match.getAnchorText(), match, index)
+              : this.renderLink(match.getAnchorText(), match, index, other);
           default:
             return part;
         }
       });
 
-    return createElement(Text, {
-      ref: (component) => { this._root = component; }, // eslint-disable-line no-underscore-dangle
-      style,
-      ...other,
-    }, ...nodes);
+    return createElement(
+      TextComponent,
+      {
+        ref: component => {
+          this._root = component;
+        }, // eslint-disable-line no-underscore-dangle
+        style,
+        ...other
+      },
+      ...nodes
+    );
   }
 }
 
@@ -264,18 +281,19 @@ Autolink.defaultProps = {
   showAlert: false,
   stripPrefix: true,
   truncate: 32,
-  truncateChars: '..',
+  truncateChars: "..",
   twitter: false,
   url: true,
-  webFallback: Platform.OS !== 'ios', // iOS requires LSApplicationQueriesSchemes for Linking.canOpenURL
+  TextComponent: Text,
+  webFallback: Platform.OS !== "ios" // iOS requires LSApplicationQueriesSchemes for Linking.canOpenURL
 };
 
 Autolink.propTypes = {
   email: PropTypes.bool,
-  hashtag: PropTypes.oneOf([false, 'instagram', 'twitter']),
+  hashtag: PropTypes.oneOf([false, "instagram", "twitter"]),
   latlng: PropTypes.bool,
   linkStyle: Text.propTypes.style, // eslint-disable-line react/no-typos
-  mention: PropTypes.oneOf([false, 'instagram', 'twitter']),
+  mention: PropTypes.oneOf([false, "instagram", "twitter"]),
   numberOfLines: PropTypes.number,
   onPress: PropTypes.func,
   onLongPress: PropTypes.func,
@@ -293,8 +311,8 @@ Autolink.propTypes = {
     PropTypes.shape({
       schemeMatches: PropTypes.bool,
       wwwMatches: PropTypes.bool,
-      tldMatches: PropTypes.bool,
-    }),
+      tldMatches: PropTypes.bool
+    })
   ]),
-  webFallback: PropTypes.bool,
+  webFallback: PropTypes.bool
 };
