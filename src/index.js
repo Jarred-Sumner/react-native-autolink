@@ -11,6 +11,7 @@ import PropTypes from "prop-types";
 import Autolinker from "autolinker";
 import { Alert, Linking, Platform, StyleSheet, Text } from "react-native";
 import matchers from "./matchers";
+import Emoji from "node-emoji";
 
 const tagBuilder = Autolinker.prototype.getTagBuilder();
 
@@ -193,6 +194,8 @@ export default class Autolink extends Component {
     })();
 
     const matches = {};
+
+    text = Emoji.emojify(text);
 
     try {
       text = Autolinker.link(text || "", {
